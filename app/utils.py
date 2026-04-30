@@ -6,6 +6,7 @@ from fastapi.security.oauth2 import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from . import database, models, schemas
+from .config import settings
 
 
 
@@ -15,8 +16,8 @@ from . import database, models, schemas
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SECRET_KEY = "a7f8c3b9e2d1a4f6c5b8e9a2d3f4c5b6e7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
-ALGORITHM = "HS256"
+SECRET_KEY = settings.secret_key
+ALGORITHM = settings.algorithm
 
 def hash(password: str):
     return pwd_context.hash(password)
@@ -33,7 +34,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     if expires_delta:
         expire = datetime.now() + expires_delta
     else:
-        expire = datetime.now() + timedelta(minutes=30)
+        expire = datetime.now() + timedelta(minutes=settings.access_token_expire_minutes)
     create_access_token.update({"exp": expire})
 
     

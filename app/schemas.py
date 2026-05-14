@@ -32,7 +32,15 @@ class Post(PostBase):
     user: userout
 
     class Config:
-        orm_mode = True   
+        orm_mode = True 
+
+class PostOut(BaseModel):
+    Post: Post
+
+    vote_count: int
+
+    class Config:
+        orm_mode = True         
         
         
         

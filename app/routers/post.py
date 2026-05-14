@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Response,status,HTTPException, Depends, APIRouter
 from .. import models, schemas, utils
 from typing import Optional
-
+from sqlalchemy import func
 from ..database import get_db
 from sqlalchemy.orm import Session
 
@@ -17,13 +17,19 @@ router = APIRouter(
 
 
 
-@router.get("/", response_model=list[schemas.Post])
+@router.get("/", response_model=list[schemas.PostOut])
+# @router.get("/")
 def get_posts(db: Session = Depends(get_db), current_user: int = Depends(utils.get_current_user), limit: int = 10, skip: int = 0, search: Optional[str] = ""):
     # cursor.execute("SELECT * FROM posts")
     # posts = cursor.fetchall()
     # print(posts)
-    posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
-    return posts
+    # posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
+    result = db.query(models.Post, func.count(models.Vote.post_id).label("vote_count")).join(models.Vote, models.Post.id == models.Vote.post_id, isouter=True).group_by(models.Post.id).filter(
+        models.Post.title.contains(search)).limit(limit).offset(skip).all()
+   
+    # return result
+    return [dict(row._mapping) for row in result]
+    # return posts
 
 
 # @app.post("/createposts")
@@ -53,12 +59,14 @@ def create_posts(new_post: schemas.PostCreate, db: Session = Depends(get_db), cu
         return post
 
 
-@router.get("/{id}", response_model=schemas.Post)
+@router.get("/{id}", response_model=schemas.PostOut)
 def get_post(id: int, response: Response, db: Session = Depends(get_db), current_user: int = Depends(utils.get_current_user)):
     # post=find_posts(id)
     # cursor.execute("SELECT * FROM posts WHERE id = %s", (str(id),))
     # post = cursor.fetchone()
-    post = db.query(models.Post).filter(models.Post.id == id).first()
+    # post = db.query(models.Post).filter(models.Post.id == id).first()
+    post= db.query(models.Post, func.count(models.Vote.post_id).label("vote_count")).join(models.Vote, models.Post.id == models.Vote.post_id, isouter=True).group_by(models.Post.id).filter(
+        models.Post.id == id).first()
 
 
     if not post:
